@@ -43,51 +43,49 @@ En una planta química hay dos máquinas que envasan detergentes industriales en
 library(ggpattern)
 library(ggplot2)
 
-# Definir los valores fijados en el enunciado
-n <- 100
-alfa <- 0.05
+# Parámetros
+n          <- 100
 media_nula <- 10
-sigma <- 1
+sigma      <- 1
+x_critico  <- 9.8
+SE         <- sigma / sqrt(n)
+x_limites  <- media_nula + c(-6.9, 5) * SE
 
-# Calcular el error estándar
-SE <- sigma / sqrt(n)
-
-# Graficar la distribución muestral de las medias si la hipótesis nula fuera verdadera
-# Primero, el gráfico base
-g_x_limites <- media_nula + c(-6.9, 5) * SE
+# Gráfico
 g <- ggplot() +
   xlim(x_limites) +
   stat_function(fun = dnorm,
                 args = list(mean = media_nula, sd = SE),
-                colour = "steelblue", fill = "steelblue", alpha = 0.2) +
+                colour = "steelblue", linewidth = 1) +
   labs(title = "Distribución muestral de las medias",
-       x = "Capacidad de bidones [litros]", y = "Densidad") +
+       x     = "Capacidad de bidones [litros]",
+       y     = "Densidad") +
   theme_minimal()
 
-# Agregamos la hipótesis nula
+# Área
 g1 <- g + stat_function(fun = dnorm, geom = "area",
-                        args = list(mean = media_nula, sd = SE),
-                        colour = "steelblue", fill = "steelblue", alpha = 0.2)
+                         args = list(mean = media_nula, sd = SE),
+                         fill = "steelblue", alpha = 0.2)
 
-# Calcular valor crítico
-g1 <- g1 + geom_vline(xintercept = media_nula, colour = "steelblue")
-z_critico_inferior <- qnorm(alfa/2, mean = media_nula, sd = SE, lower.tail = TRUE)
-z_critico_superior <- qnorm(alfa/2, mean = media_nula, sd = SE, lower.tail = FALSE)
+# Línea en la media nula
+g1 <- g1 + geom_vline(xintercept = media_nula, colour = "steelblue",
+                       linetype = "dashed")
 
+# Área de rechazo (cola izquierda)
 g2 <- g1 + stat_function(fun = dnorm, geom = "area",
-                        args = list(mean = media_nula, sd = SE),
-                        xlim = c(x_limites[1], z_critico_inferior),
-                        fill = "steelblue", alpha = 0.4) +
-  stat_function(fun = dnorm, geom = "area",
-                args = list(mean = media_nula, sd = SE),
-                xlim = c(z_critico_superior, x_limites[2]),
-                fill = "steelblue", alpha = 0.4)
+                           args = list(mean = media_nula, sd = SE),
+                           xlim = c(x_limites[1], x_critico),
+                           fill = "red", alpha = 0.5)
 
-# Mostrar el gráfico
+# Línea en el valor crítico
+g2 <- g2 + geom_vline(xintercept = x_critico, colour = "red",
+                       linetype = "dashed")
+
 print(g2)
 
-x <- pnorm(9.8, 10, SE)
-print(x)
+# Error Tipo I
+alfa_calculado <- pnorm(x_critico, mean = media_nula, sd = SE)
+cat("Error Tipo I:", round(alfa_calculado, 4))
 ```
 
 ---
@@ -97,97 +95,87 @@ print(x)
 >**Si el verdadero volumen medio de los bidones fuera de 9,85 litros, ¿cuál sería la probabilidad de que la ingeniera, que obviamente no conoce este dato, cometa un error de tipo II? Para responder, agregue al gráfico anterior la verdadera distribución muestral de las medias y marquen (con otro color) la zona correspondiente a la probabilidad solicitada, para luego, basándose en este gráfico, calcular el área correspondiente. También hay ejemplos de este procedimiento en la lectura sobre poder estadístico.**
 
 ```{r}
-# Definir los valores verdaderos, usualmente desconocidos
 media_verdadera <- 9.85
 delta <- media_nula - media_verdadera
 
 # Agregar la verdadera distribución muestral de las medias
 g3 <- g2 + stat_function(fun = dnorm, geom = "area",
-                         args = list(mean = media_verdadera, sd = SE),
-                         colour = "steelblue1", fill = "steelblue1", alpha = 0.2)
+                          args = list(mean = media_verdadera, sd = SE),
+                          colour = "steelblue1", fill = "steelblue1", alpha = 0.2)
 
-g3 <- g3 + geom_vline(xintercept = media_verdadera, colour = "steelblue1")
+g3 <- g3 + geom_vline(xintercept = media_verdadera, colour = "steelblue1",
+                       linetype = "dashed")
 
-# Agregar anotación del tamaño del efecto y mostrar el gráfico que resulta
+# Anotación del tamaño del efecto
 x_ann <- c(media_verdadera, media_nula)
-
 y_ann <- c(dnorm(media_verdadera, mean = media_verdadera, sd = SE),
-           dnorm(media_nula, mean = media_nula, sd = SE))
-
+           dnorm(media_nula,      mean = media_nula,      sd = SE))
 y_ann <- y_ann + 0.005
 
 g4 <- g3 + annotate("segment",
-                    x = x_ann[1], y = y_ann[1],
-                    xend = x_ann[2], yend = y_ann[2],
-                    arrow = arrow(angle = 10, length = unit(0.03, "npc"),
-                                  ends = "both", type = "open"))
+                     x    = x_ann[1], y    = y_ann[1],
+                     xend = x_ann[2], yend = y_ann[2],
+                     arrow = arrow(angle = 10, length = unit(0.03, "npc"),
+                                   ends = "both", type = "open"))
 
 g4 <- g4 + annotate("text",
-                    x = sum(x_ann) / 2,
-                    y = y_ann[1] + 0.015,
-                    label = "delta",
-                    vjust = "top",
-                    parse = TRUE)
+                     x     = sum(x_ann) / 2,
+                     y     = y_ann[1] + 0.015,
+                     label = "delta",
+                     vjust = "top",
+                     parse = TRUE)
 
 print(g4)
 ```
 
 ```{r}
-# Traspasar las regiones críticas a la verdadera distribución muestral de las medias
+# Zona de poder: área a la IZQUIERDA de x_critico bajo H1 (se rechaza correctamente)
 g5 <- g3 + stat_function(fun = dnorm, geom = "area",
-                         args = list(mean = media_verdadera, sd = SE),
-                         xlim = c(g_x_limites[1], z_critico_inferior),
-                         fill = "steelblue1", alpha = 0.4)
+                          args = list(mean = media_verdadera, sd = SE),
+                          xlim = c(x_limites[1], x_critico),
+                          fill = "steelblue1", alpha = 0.4)
 
-g5 <- g5 + stat_function(fun = dnorm, geom = "area",
-                         args = list(mean = media_verdadera, sd = SE),
-                         xlim = c(z_critico_superior, g_x_limites[2]),
-                         fill = "steelblue1", alpha = 0.4)
-
+# Zona de beta: área a la DERECHA de x_critico bajo H1 (no se rechaza siendo falsa)
 g5 <- g5 + stat_function(fun = dnorm, geom = "area_pattern",
-                         args = list(mean = media_verdadera, sd = SE),
-                         xlim = c(z_critico_inferior, z_critico_superior),
-                         fill = "white", colour = "steelblue1", alpha = 0.3,
-                         pattern_spacing = 0.15, pattern_density = 0.4,
-                         pattern_fill = "steelblue1", pattern_colour = "steelblue1",
-                         pattern_angle = 45, pattern_alpha = 0.3)
+                          args = list(mean = media_verdadera, sd = SE),
+                          xlim = c(x_critico, x_limites[2]),
+                          fill = "white", colour = "steelblue1", alpha = 0.3,
+                          pattern_spacing = 0.15, pattern_density = 0.4,
+                          pattern_fill    = "steelblue1",
+                          pattern_colour  = "steelblue1",
+                          pattern_angle   = 45, pattern_alpha = 0.3)
 
-# Agregar anotación del poder y mostrar el nuevo gráfico
-g5 <- g5 + annotate("text", x = 50, y = 0.1, label = "poder[inf]",
-                    vjust = "top", parse = TRUE)
+# Anotaciones
+g5 <- g5 + annotate("text",
+                     x     = x_critico - 0.05,
+                     y     = 1.5,
+                     label = "poder",
+                     vjust = "top", parse = TRUE)
 
-g5 <- g5 + annotate("text", x = 66.3, y = 0.04, label = "poder[sup]",
-                    vjust = "top", parse = TRUE)
+g5 <- g5 + annotate("text",
+                     x     = x_critico + 0.08,
+                     y     = 1.5,
+                     label = "beta",
+                     vjust = "top", parse = TRUE)
 
-g5 <- g5 + annotate("text", x = sum(x_ann) / 2, y = y_ann[1] - 0.005,
-                    label = "beta", vjust = "top", parse = TRUE)
+g5 <- g5 + annotate("segment",
+                     x    = x_critico - 0.05, y    = 1.38,
+                     xend = x_critico - 0.07, yend = 0.5,
+                     arrow = arrow(angle = 10, length = unit(0.03, "npc"),
+                                   ends = "last", type = "open"))
 
-g5 <- g5 + annotate("segment", x = 50, y = 0.087, xend = 52.5, yend = 0.02,
-                    arrow = arrow(angle = 10, length = unit(0.03, "npc"),
-                                  ends = "last", type = "open"))
-
-g5 <- g5 + annotate("segment", x = 65, y = 0.027, xend = 64.2, yend = 0.001,
-                    arrow = arrow(angle = 10, length = unit(0.03, "npc"),
-                                  ends = "last", type = "open"))
-
-g5 <- g5 + annotate("segment", x = sum(x_ann) / 2, y = y_ann[1] - 0.023,
-                    xend = 57, yend = 0.10,
-                    arrow = arrow(angle = 10, length = unit(0.03, "npc"),
-                                  ends = "last", type = "open"))
-
+g5 <- g5 + annotate("segment",
+                     x    = x_critico + 0.08, y    = 1.38,
+                     xend = x_critico + 0.06, yend = 0.5,
+                     arrow = arrow(angle = 10, length = unit(0.03, "npc"),
+                                   ends = "last", type = "open"))
 print(g5)
 
-# Calcular y mostrar el poder
-poder_inf <- pnorm(z_critico_inferior, mean = media_verdadera, sd = SE, lower.tail = TRUE)
-poder_sup <- pnorm(z_critico_superior, mean = media_verdadera, sd = SE, lower.tail = FALSE)
-poder <- poder_inf + poder_sup
-cat("Poder = ", poder, "\n")
-
-# Calcular y mostrar la probabilidad de cometer un error tipo II
-beta <- 1 - poder
-cat("Beta = ", beta, "\n")
-
-pnorm(9.8, 9.85, SE, lower.tail = FALSE)
+# Calcular poder y beta
+poder <- pnorm(x_critico, mean = media_verdadera, sd = SE, lower.tail = TRUE)
+beta  <- 1 - poder
+cat("Poder =", round(poder, 4), "\n")
+cat("Beta  =", round(beta,  4), "\n")
 ```
 
 ---
@@ -202,46 +190,33 @@ library(pwr)
 library(tidyr)
 
 # Definir los valores del enunciado
-n <- 100
-alfa <- 0.05
+n          <- 100
+alfa       <- 0.0228
 media_nula <- 10
-sigma <- 1
+sigma      <- 1
 
 # Definir tamaños del efecto
-medias_verdaderas <- seq(9.5, 10, 0.01)
-deltas <- medias_verdaderas - media_nula
+medias_verdaderas   <- seq(9.5, 10, 0.01)
+deltas              <- medias_verdaderas - media_nula
 deltas_normalizados <- deltas / sigma
 
-# Definir función para calcular el poder de la prueba Z bilateral
-# y aplicar a los tamaños del efecto.
-f_pzb <- function(x) pwr.norm.test(d = x, n = n, sig.level = alfa, 
-                                   alternative = "two.sided")[["power"]]
-poder_bilat <- sapply(deltas_normalizados, f_pzb)
-
-# Definir función para calcular el poder de la prueba Z con hipótesis alternativa
-# unilateral tipo "less" y aplicar a los tamaños del efecto.
-f_pzl <- function(x) pwr.norm.test(d = x, n = n, sig.level = alfa, 
-                                   alternative = "less")[["power"]]
+# Prueba Unilateral
+f_pzl <- function(x) pwr.norm.test(d = x, n = n, sig.level = alfa,
+                                    alternative = "less")[["power"]]
 poder_unilat <- sapply(deltas_normalizados, f_pzl)
 
-# Graficar estas curvas
-datos_anchos <- data.frame(deltas, poder_bilat, poder_unilat)
-datos_largos <- datos_anchos |> 
-  pivot_longer(-deltas, names_to = "Tipo", values_to = "Poder")
+# Data frame
+datos <- data.frame(media = medias_verdaderas, Poder = poder_unilat)
 
-datos_largos[["Tipo"]] <- factor(datos_largos[["Tipo"]], 
-                                 labels = c("Bilateral", "Unilateral"))
+# Graficar
+g <- ggline(datos, x = "media", y = "Poder", plot_type = "l",
+            numeric.x.axis = TRUE,
+            title = "Relación entre poder y verdadero volumen medio",
+            xlab  = "Verdadero volumen medio [litros]",
+            ylab  = "Poder",
+            color = "steelblue")
 
-g <- ggline(datos_largos, x = "deltas", y = "Poder", plot_type = "l", 
-            numeric.x.axis = TRUE, 
-            title = "Relación entre poder y tamaño del efecto",
-            xlab = "Delta [s]", color = "Tipo", 
-            palette = c("steelblue", "steelblue1"))
-
-g <- ggpar(g, legend = c(.85, .35))
 print(g)
-
-# Quitar la prueba unilateral
 ```
 
 
@@ -269,5 +244,25 @@ ceiling(y$n)
 
 ```{r}
 # Tarea
+library(pwr)
+p1 <- 0.96
+p2 <- 0.90
+
+# Cálculo del tamaño del efecto
+efecto_h <- ES.h(p1, p2)
+print(efecto_h)
+
+# Cálculo de la potencia disponible
+resultado <- pwr.2p.test(h = efecto_h, 
+                         n = NULL, 
+                         sig.level = 0.05,
+                         power = 0.75,
+                         alternative = "two.sided")
+
+print(resultado)
+# Se require el doble de la muestra
+ceiling(resultado$n) * 2
+
+# En base al resultado se concluye
 ```
 
