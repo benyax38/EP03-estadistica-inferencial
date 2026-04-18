@@ -1,7 +1,7 @@
 ---
 title: "EP03-respuesta-equipo-3"
 author: "Equipo 3"
-date: "`r Sys.Date()`"
+date: "18-04-2026"
 output:
   html_document:
     toc: true # Activa la tabla de contenidos (índice)
@@ -31,27 +31,70 @@ En una planta química hay dos máquinas que envasan detergentes industriales en
 
 ---
 
-# Captura de datos
-
----
-
 # Pregunta 1
 
 > **Si la ingeniera está seguro de que el verdadero volumen medio no puede ser superior a 10 litros y piensa rechazar la hipótesis nula cuando la muestra presente una media menor a 9,8 litros, ¿cuál es la probabilidad de que cometa un error de tipo I? Para responder, generen un gráfico de la distribución muestral de las medias hipotetizada en donde se marque la zona correspondiente a la probabilidad solicitada, para luego, basándose en este gráfico, calcular el área correspondiente. Tome como ejemplo los scripts presentados en la lectura sobre poder estadístico.**
+
+## Análisis del problema
+
+A partir del enunciado se plantea la siguiente prueba de hipótesis de tipo unilateral:
+
+H0: El verdadero volumen medio de producto que reporta la ingeniera a cargo es de 10 litros.
+HA: La ingeniera reporta una media de llenado de bidones inferior a 10 litros.
+
+Matemáticamente esto es:
+
+$$
+H_0: \mu = 10 \text{ litros}
+$$
+
+$$
+H_A: \mu < 10 \text{ litros}
+$$
+
+Se solicita obtener la probabilidad de obtener un error de tipo I, lo que equivale a rechazar la hipótesis nula (la máquina está fallando) cuando en realidad es verdadera (la máquina rellena correctamente los bidones con 10 litros). La incógnita mencionada también se conoce como nivel de significancia y se representa con la letra griega alpha.
+
+Además, se pide identificar visualmente el área correspondiente al nivel de significancia.
+
+## Solución
+
+En primer lugar, se hace uso de la función pnorm() que permite calcular el valor de la función de la distribución acumulada para una distribución normal, o en otras palabras, entrega la probabilidad de que una variable aleatoria normal sea menor o igual a un valor dado.
+
+Para utilizar la función pnorm() se utilizaron 3 parámetros. El primero de ellos es el valor crítico previo a rechazar la hipótesis nula. Ese dato fue entregado en el enunciado de la pregunta 1 y corresponde a 9.8 litros. El segundo parámetro es la media de la distribución bajo estudio, en este caso 10 litros. El tercero corresponde al error estándar, el cual se calcula mediante la división entre la desviación estándar (es 1 según el contexto entregado) y el tamaño de la muestra equivalente a 100 bidones.
+
+¿Por qué se usa error estándar?
+
+Respecto al gráfico, se hace uso de las librerías "ggplot2" para armar los gráficos y "ggpatern" para marcar el área asociada al nivel de significancia. 
 
 ```{r}
 library(ggpattern)
 library(ggplot2)
 
-# Parámetros
-n          <- 100
-media_nula <- 10
-sigma      <- 1
-x_critico  <- 9.8
-SE         <- sigma / sqrt(n)
-x_limites  <- media_nula + c(-6.9, 5) * SE
+# Parámetros requeridos:
 
-# Gráfico
+# Tamaño de muestra
+n <- 100
+
+# Media de la distribución
+media_nula <- 10
+
+# Desviación estándar
+sigma <- 1
+
+# Valor crítico
+x_critico <- 9.8
+
+# Error estándar
+SE <- sigma / sqrt(n)
+
+# Cálculo de la probabilidad de obtener un error de tipo I
+alfa_calculado <- pnorm(x_critico, mean = media_nula, sd = SE)
+cat("Error Tipo I:", round(alfa_calculado, 4))
+
+# Intervalo a graficar
+x_limites <- media_nula + c(-6.9, 5) * SE
+
+# Creación del gráfico
 g <- ggplot() +
   xlim(x_limites) +
   stat_function(fun = dnorm,
@@ -62,12 +105,12 @@ g <- ggplot() +
        y     = "Densidad") +
   theme_minimal()
 
-# Área
+# Área bajo la función de distribución
 g1 <- g + stat_function(fun = dnorm, geom = "area",
                          args = list(mean = media_nula, sd = SE),
                          fill = "steelblue", alpha = 0.2)
 
-# Línea en la media nula
+# Marca con una línea punteada la media nula (10)
 g1 <- g1 + geom_vline(xintercept = media_nula, colour = "steelblue",
                        linetype = "dashed")
 
@@ -77,22 +120,38 @@ g2 <- g1 + stat_function(fun = dnorm, geom = "area",
                            xlim = c(x_limites[1], x_critico),
                            fill = "red", alpha = 0.5)
 
-# Línea en el valor crítico
+# Marca con una línea punteada el valor crítico (9.8)
 g2 <- g2 + geom_vline(xintercept = x_critico, colour = "red",
                        linetype = "dashed")
 
 print(g2)
-
-# Error Tipo I
-alfa_calculado <- pnorm(x_critico, mean = media_nula, sd = SE)
-cat("Error Tipo I:", round(alfa_calculado, 4))
 ```
+
+## Resultados y conclusiones
+
+La probabilidad de cometer un error de tipo I es de 0,0228 (2,28%). Esto quiere decir que si el verdadero volumen medio de los bidones fuera de 10 litros (que H0 fuera verdadera), existe un 2,28% de probabilidad de que la muestra arroje una media menor a 9,8 litros y la ingeniera concluya erróneamente que el proceso está fallando.
+
+En el gráfico esto corresponde al área roja ubicada en la zona izquierda de la distribución muestral, que representa los casos en los que aleatoriamente se produciría una muestra engañosamente baja aún cuando el proceso esté funcionando como debería.
 
 ---
 
 # Pregunta 2
 
 >**Si el verdadero volumen medio de los bidones fuera de 9,85 litros, ¿cuál sería la probabilidad de que la ingeniera, que obviamente no conoce este dato, cometa un error de tipo II? Para responder, agregue al gráfico anterior la verdadera distribución muestral de las medias y marquen (con otro color) la zona correspondiente a la probabilidad solicitada, para luego, basándose en este gráfico, calcular el área correspondiente. También hay ejemplos de este procedimiento en la lectura sobre poder estadístico.**
+
+## Análisis del problema
+
+Habiendo determinado en la pregunta anterior que existe un 2,28% de probabilidad de rechazar equivocadamente H_0 cuando el proceso funciona correctamente, en esta pregunta analizamos lo contrario. O sea, el proceso está fallando pero la ingeniera no lo detecta.
+
+Si el verdadero volumen medio fuera 9,85 litros, la ingeniera seguiría aplicando la misma regla de decisión (rechazar si x̄ < 9,8). El Error de Tipo II ocurre cuando, a pesar de que μ = 9,85 < 10, la muestra arroja una media ≥ 9,8 y la ingeniera concluye erróneamente que el proceso está bien.
+
+Como seguimos trabajando con la hipótesis nula y alternativa planteada en la pregunta 1 solo planteamos β como:  
+
+$$
+\beta = P\left(\bar{x} \geq 9.8 \mid \mu_{\text{real}} = 9.85 \right)
+$$
+
+# Solución
 
 ```{r}
 media_verdadera <- 9.85
@@ -127,6 +186,11 @@ g4 <- g4 + annotate("text",
 
 print(g4)
 ```
+
+Este gráfico lo utilizamos como comparación visual para ambas distribuciones. En azul oscuro tenemos la distribución 
+centrada en μ = 10 utilizada en la pregunta anterior, y en azul claro la distribución centrada en μ = 9,85. δ representaría el tamaño del efecto, equivalente a 0,15 litros. La región roja a la izquierda de x̄ = 9,8 corresponde  al área de Error de Tipo I calculada en P1
+
+A continuación identificamos las zonas de poder y β sobre la distribución real:
 
 ```{r}
 # Zona de poder: área a la IZQUIERDA de x_critico bajo H1 (se rechaza correctamente)
@@ -178,24 +242,55 @@ cat("Poder =", round(poder, 4), "\n")
 cat("Beta  =", round(beta,  4), "\n")
 ```
 
+## Resultados y conclusiones
+
+El resultado obtenido fue: **β = 0,6915**. Esto significa que si el proceso estuviera fallando con una media real de 9,85 litros, la ingeniera tendría un 69,15% de probabilidad de no detectarlo, al obtener una muestra con media ≥ 9,8 y concluir erróneamente 
+que todo está bien.
+
+Además, calculando el poder estadístico de la prueba nos da **0,3085**, lo que indica que bajo estas condiciones la prueba solo detectaría el problema en aproximadamente 3 de cada 10 muestras.
+
 ---
 
 # Pregunta 3
 
 >**Como no se conoce el verdadero volumen medio, genere un gráfico del poder estadístico con las condiciones anteriores, pero suponiendo que el verdadero volumen medio podría variar de 9,5 a 10 litros. Hay un ejemplo de este tipo de gráfico en la lectura sobre poder estadístico.**
 
+## Análisis del problema
+
+El objetivo consiste en generar un gráfico que permita realizar un análisis visual del comportamiento del poder estadístico al variar los valores del volumen medio.
+
+De acuerdo con Reyes (2013), el poder de una prueba estadística radica en la probabilidad de que la prueba va a rechazar la hipótesis nula cuando la hipótesis nula es falsa. En otras palabras, se trata de la probabilidad de tomar una decisión con base en falsos negativos (Cohen, 1988).
+
+Cárdenas y Arancibia (2014) afirman que "la potencia estadística se calcula de acuerdo a 3 elementos: tamaño de la muestra (n), nivel de error (α) y tamaño del efecto", siendo este último el que se quiere estudiar.
+
+## Solución
+
+El enunciado menciona que se deben utilizar las "condiciones anteriores". Esto hace referencia principalmente a que se hace uso del nivel de significancia obtenido como resultado de la pregunta 1 que es de 0.0228
+
+Para obtener el gráfico se crea un "data frame" o tabla con 2 columnas, una con las medias verdaderas que corresponde a la variación de 9.5 a 10 litros (eje x) y la otra con el poder obtenido de la función pwr.norm.test() (eje y).
+
+Notar que en el libro de Jara y Köhler (s. f.) se grafica el poder versus el tamaño del efecto representado por delta. Para este caso, se hizo uso de las medias verdaderas en el eje x, pero en realidad el comportamiento de las curvas es el mismo debido a que se puede usar una transformación lineal que permite pasar de un gráfico a otro.
+
 ```{r}
 library(ggpubr)
 library(pwr)
 library(tidyr)
 
-# Definir los valores del enunciado
-n          <- 100
-alfa       <- 0.0228
-media_nula <- 10
-sigma      <- 1
+# Parámetros requeridos:
 
-# Definir tamaños del efecto
+# Tamaño de la muestra
+n <- 100
+
+# Nivel de significancia obtenido en la pregunta 1
+alfa <- 0.0228
+
+# Media de la distribución
+media_nula <- 10
+
+# Desviación estándar
+sigma <- 1
+
+# Variación del volumen medio --> tamaño del efecto
 medias_verdaderas   <- seq(9.5, 10, 0.01)
 deltas              <- medias_verdaderas - media_nula
 deltas_normalizados <- deltas / sigma
@@ -219,6 +314,11 @@ g <- ggline(datos, x = "media", y = "Poder", plot_type = "l",
 print(g)
 ```
 
+## Resultados y conclusiones
+
+En el gráfico se observa que el poder estadístico de la prueba va disminuyendo al acercarse a un volumen medio de 10 litros. En ese punto, el poder o potencia se iguala al nivel de significancia de 0.0228 obtenido en el desarrollo de la pregunta 1. Por otro lado, el mayor poder o mayor probabilidad de rechazar correctamente H0 (detectar una falla en la máquina) se obtiene con valores de volumen medio cercanos a 9.5
+
+Además, se ve que para una media levemente superior a 9.7 el poder asociado es de 0.75, dato que será útil para análisis posteriores.
 
 ---
 
@@ -226,15 +326,39 @@ print(g)
 
 >**Considerando la suposición de que el verdadero volumen medio de los bidones es de 9,85 litros, ¿cuántos bidones deberían revisarse para conseguir un poder estadístico de 0,75 y un nivel de significación de 0,05?**
 
+## Análisis del problema
+
+Ahora se debe hallar el tamaño de la muestra que permita cumplir con los estándares definidos, bajo el supuesto de una distribución muestral centrada en 9.85 litros, situación que ya fue representada gráficamente en la pregunta 2.
+
+## Solución
+
+Para obtener el tamaño muestral se hace uso de la función pwr.norm.test(). Los parámetros utilizados son 5, tamaño del efecto normalizado (d), tamaño muestral (n), nivel de significación (α), poder estadístico (1-β) y tipo de hipótesis alternativa (unilateral o bilateral). Si dejamos n con valor NULL, la función entrega su valor a partir de los demás parámetros.
+
 ```{r}
 library(pwr)
-y <- pwr.norm.test(0.15, n=NULL, 0.05, 0.75, "greater")
-print(y)
-ceiling(y$n)
 
-# Tarea: investigar porque es greater
+# Parámetros de la función
+
+# Tamaño del efecto normalizado
+tam_enorm <- 10 - 9.85
+
+# Nivel de significancia
+niv_sig <- 0.05
+
+# Poder estadístico
+pod_est <- 0.75
+
+# Cálculo del tamaño muestral requerido
+y <- pwr.norm.test(d=tam_enorm, n=NULL, sig.level = niv_sig, power = pod_est, alternative = "greater")
+print(y)
+cat("Tamaño muestral requerido: ", ceiling(y$n))
 ```
 
+# Resultados y conclusiones
+
+Teniendo en cuenta que el verdadero volumen medio sea de 9,85 litros y no 10 litros, con un nivel de significancia de 0,05 y un poder estadístico de 0,75, se necesita revisar un mínimo de 240 bidones.
+
+Esto significa que con una muestra de 240 bidones, la ingeniera tendría un 75% de probabilidad (Poder estadístico) de detectar correctamente que el proceso está errado y un 5% de probabilidad (Nivel de significancia) de concluir erróneamente que hay un problema cuando en realidad no lo hay.
 
 ---
 
@@ -242,27 +366,70 @@ ceiling(y$n)
 
 >**¿Alcanzaría esta muestra para detectar la diferencia que la ingeniera sospecha que existe entre las dos máquinas de la planta con al menos las mismas probabilidades de cometer errores?**
 
+## Análisis del problema
+
+De acuerdo al contexto inicial, la ingeniera sospecha que hay una diferencia de cumplimiento entre la máquina más antigua y la más nueva, equivalente a 90% y 96% de los bidones respectivamente. Esto se traduce en el siguiente planteamiento:
+
+p1: La máquina más antigua llena los bidones a un 90% de capacidad.
+p2: La máquina más nueva llena los bidones a un 96% de capacidad.
+
+Con esto se plantea la prueba de proporciones:
+
+H0: Las 2 máquinas llenan los bidones con la misma capacidad, o sea, no existe diferencia entre proporciones.
+HA: Las 2 máquinas presentan una diferencia significativa en las proporciones con las que llenan los bidones.
+
+Matemáticamente:
+
+$$
+H_0: p_1 - p_2 = 0
+$$
+
+$$
+H_A: p_1 - p_2 \neq 0
+$$
+
+## Solución
+
+Para probar que existe la diferencia entre proporciones se hace uso de la función pwr.2p.test() para dos muestras iguales, donde se ingresan 4 de los 5 parámetros requeridos dejando n=NULL para obtener el tamaño de muestra que será comparado con el tamaño de la muestra de 100 bidones.
+
+
 ```{r}
-# Tarea
 library(pwr)
-p1 <- 0.96
-p2 <- 0.90
 
-# Cálculo del tamaño del efecto
-efecto_h <- ES.h(p1, p2)
-print(efecto_h)
+# Datos del enunciado
+p_moderna <- 0.96
+p_antigua <- 0.90
+alfa_q1 <- 0.05
+poder_q4 <- 0.75
 
-# Cálculo de la potencia disponible
-resultado <- pwr.2p.test(h = efecto_h, 
-                         n = NULL, 
-                         sig.level = 0.05,
-                         power = 0.75,
+# Tamaño del efecto 
+h_efecto <- ES.h(p_moderna, p_antigua)
+print(h_efecto)
+
+# Tamaño de muestra necesario
+calculo_n <- pwr.2p.test(h = h_efecto, 
+                         sig.level = alfa_q1, 
+                         power = poder_q4, 
                          alternative = "two.sided")
 
-print(resultado)
-# Se require el doble de la muestra
-ceiling(resultado$n) * 2
+n_necesario_por_maquina <- ceiling(calculo_n$n)
+n_total_necesario <- n_necesario_por_maquina * 2
 
-# En base al resultado se concluye
+# Resultados
+cat("Muestra actual total: 100\n")
+cat("Muestra necesaria total:", n_total_necesario, "\n")
 ```
+
+## Resultados y conclusiones
+
+La muestra necesaria para detectar la diferencia que la ingeniera sospecha es de 480 bidones. Esto considerando un tamaño de efecto de aproximadamente 0.24, un nivel de significancia de 0.05, un poder estadístico de 0.75 y una prueba de hipótesis bilateral. Por lo que la muestra actual aleatoria de 100 bidones que utilizó la ingeniera, no es suficiente para detectar diferencias entre el llenado de bidones que realiza cada máquina. Se recomienda aumentar la muestra bajo estudio.
+
+---
+
+# Referencias
+
+1. Jara, J. L., & Köhler, J. (s. f.). Inferencia y modelos estadísticos [Perusall].
+2.Reyes, M. (2013). El poder estadístico: diferencias observadas cuando se cambia el alfa establecido en un estudio de investigación. Scientific International Journal, 10(1), 23–32.
+3. Cohen, J,  (1988).  Statistical  Power  Analysis  for the  Behavioral  Sciences, (2ª.  ed.), New Jersey: Lawrence Erlbaum Associates.
+4. Cárdenas, M., y Arancibia, H. (2014). Potencia estadística y cálculo del tamaño del efecto en G*POWER: complementos a las pruebas de significación estadística y su aplicación en psicología. Salud y Sociedad, 5(2), 210–224.
 
