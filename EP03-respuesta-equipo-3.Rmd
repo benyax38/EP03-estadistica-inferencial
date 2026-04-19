@@ -62,8 +62,6 @@ En primer lugar, se hace uso de la función pnorm() que permite calcular el valo
 
 Para utilizar la función pnorm() se utilizaron 3 parámetros. El primero de ellos es el valor crítico previo a rechazar la hipótesis nula. Ese dato fue entregado en el enunciado de la pregunta 1 y corresponde a 9.8 litros. El segundo parámetro es la media de la distribución bajo estudio, en este caso 10 litros. El tercero corresponde al error estándar, el cual se calcula mediante la división entre la desviación estándar (es 1 según el contexto entregado) y el tamaño de la muestra equivalente a 100 bidones.
 
-¿Por qué se usa error estándar?
-
 Respecto al gráfico, se hace uso de las librerías "ggplot2" para armar los gráficos y "ggpatern" para marcar el área asociada al nivel de significancia. 
 
 ```{r}
@@ -334,13 +332,15 @@ Ahora se debe hallar el tamaño de la muestra que permita cumplir con los están
 
 Para obtener el tamaño muestral se hace uso de la función pwr.norm.test(). Los parámetros utilizados son 5, tamaño del efecto normalizado (d), tamaño muestral (n), nivel de significación (α), poder estadístico (1-β) y tipo de hipótesis alternativa (unilateral o bilateral). Si dejamos n con valor NULL, la función entrega su valor a partir de los demás parámetros.
 
+El tamaño del efecto normalizado se calcula como d = (μ_real - μ_0) / σ, es decir, d = (9,85 - 10) / 1 = -0,15. El signo negativo es coherente con la hipótesis alternativa H₁: μ < 10, por lo que se utiliza alternative = "less", tal como indica la ecuación 7.3 de la lectura 4.
+
 ```{r}
 library(pwr)
 
 # Parámetros de la función
 
 # Tamaño del efecto normalizado
-tam_enorm <- 10 - 9.85
+tam_enorm <- (9.85 - 10) / sigma
 
 # Nivel de significancia
 niv_sig <- 0.05
@@ -349,7 +349,7 @@ niv_sig <- 0.05
 pod_est <- 0.75
 
 # Cálculo del tamaño muestral requerido
-y <- pwr.norm.test(d=tam_enorm, n=NULL, sig.level = niv_sig, power = pod_est, alternative = "greater")
+y <- pwr.norm.test(d=tam_enorm, n=NULL, sig.level = niv_sig, power = pod_est, alternative = "less")
 print(y)
 cat("Tamaño muestral requerido: ", ceiling(y$n))
 ```
@@ -390,7 +390,7 @@ $$
 
 ## Solución
 
-Para probar que existe la diferencia entre proporciones se hace uso de la función pwr.2p.test() para dos muestras iguales, donde se ingresan 4 de los 5 parámetros requeridos dejando n=NULL para obtener el tamaño de muestra que será comparado con el tamaño de la muestra de 100 bidones.
+Para probar que existe la diferencia entre proporciones se hace uso de la función pwr.2p.test() para dos muestras iguales, donde se ingresan 4 de los 5 parámetros requeridos dejando n=NULL para obtener el tamaño de muestra que será comparado con el tamaño de la muestra obtenido en la pregunta 4 de 240 bidones.
 
 
 ```{r}
@@ -404,7 +404,6 @@ poder_q4 <- 0.75
 
 # Tamaño del efecto 
 h_efecto <- ES.h(p_moderna, p_antigua)
-print(h_efecto)
 
 # Tamaño de muestra necesario
 calculo_n <- pwr.2p.test(h = h_efecto, 
@@ -416,13 +415,14 @@ n_necesario_por_maquina <- ceiling(calculo_n$n)
 n_total_necesario <- n_necesario_por_maquina * 2
 
 # Resultados
+cat("Tamaño del efecto:", h_efecto)
 cat("Muestra actual total: 100\n")
 cat("Muestra necesaria total:", n_total_necesario, "\n")
 ```
 
 ## Resultados y conclusiones
 
-La muestra necesaria para detectar la diferencia que la ingeniera sospecha es de 480 bidones. Esto considerando un tamaño de efecto de aproximadamente 0.24, un nivel de significancia de 0.05, un poder estadístico de 0.75 y una prueba de hipótesis bilateral. Por lo que la muestra actual aleatoria de 100 bidones que utilizó la ingeniera, no es suficiente para detectar diferencias entre el llenado de bidones que realiza cada máquina. Se recomienda aumentar la muestra bajo estudio.
+La muestra necesaria para detectar la diferencia que la ingeniera sospecha es de 480 bidones. Esto considerando un tamaño de efecto de aproximadamente 0.24, un nivel de significancia de 0.05, un poder estadístico de 0.75 y una prueba de hipótesis bilateral. Por lo que la muestra anterior de 240 bidones, no es suficiente para detectar diferencias entre el llenado de bidones que realiza cada máquina. Se recomienda aumentar la muestra bajo estudio.
 
 ---
 
